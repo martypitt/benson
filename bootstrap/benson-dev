@@ -1,0 +1,93 @@
+#!/bin/sh
+
+PRG="$0"
+USE_DEBUG="$1"
+
+echo $USE_DEBUG
+while [ -h "$PRG" ]; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+        PRG="$link"
+    else
+        PRG=`dirname "$PRG"`/"$link"
+    fi
+done
+BENSON_HOME=`dirname "$PRG"`
+
+# Absolute path
+BENSON_HOME=`cd "$BENSON_HOME/.." ; pwd`
+echo "Resolved BENSON_HOME: $BENSON_HOME"
+
+mkdir -p "$BENSON_HOME"/bootstrap/target/osgi/bin
+mkdir -p "$BENSON_HOME"/bootstrap/target/osgi/bundle
+mkdir -p "$BENSON_HOME"/bootstrap/target/osgi/conf
+
+cp "$BENSON_HOME"/bootstrap/src/main/bin/* "$BENSON_HOME"/bootstrap/target/osgi/bin
+chmod +x "$BENSON_HOME"/bootstrap/target/osgi/bin/*.sh
+
+cp "$BENSON_HOME"/bootstrap/src/main/conf/* "$BENSON_HOME"/bootstrap/target/osgi/conf
+
+# Most BENSON bundles are not special and belong in "bundle"
+cp "$BENSON_HOME"/target/all/*.jar "$BENSON_HOME"/bootstrap/target/osgi/bundle
+
+# Move the startup-related JAR from the "bundle" directory to the "bin" directory
+mv "$BENSON_HOME"/bootstrap/target/osgi/bundle/com.mangofactory.benson.bootstrap-*.jar "$BENSON_HOME"/bootstrap/target/osgi/bin
+mv "$BENSON_HOME"/bootstrap/target/osgi/bundle/org.apache.felix.framework-*.jar "$BENSON_HOME"/bootstrap/target/osgi/bin
+
+# Build a classpath containing our two magical startup JARs (we look for " /" as per BENSON-905)
+BENSON_CP=`echo "$BENSON_HOME"/bootstrap/target/osgi/bin/*.jar | sed 's/ \//:\//g'`
+echo BENSON_CP: $BENSON_CP
+
+# Store file locations in variables to facilitate Cygwin conversion if needed
+
+BENSON_OSGI_FRAMEWORK_STORAGE="$BENSON_HOME/bootstrap/target/osgi/cache"
+echo "BENSON_OSGI_FRAMEWORK_STORAGE: $BENSON_OSGI_FRAMEWORK_STORAGE"
+
+BENSON_AUTO_DEPLOY_DIRECTORY="$BENSON_HOME/bootstrap/target/osgi/bundle"
+echo "BENSON_AUTO_DEPLOY_DIRECTORY: $BENSON_AUTO_DEPLOY_DIRECTORY"
+
+BENSON_CONFIG_FILE_PROPERTIES="$BENSON_HOME/bootstrap/target/osgi/conf/config.properties"
+echo "BENSON_CONFIG_FILE_PROPERTIES: $BENSON_CONFIG_FILE_PROPERTIES"
+
+cygwin=false;
+case "`uname`" in
+    CYGWIN*)
+        cygwin=true
+        ;;
+esac
+
+if [ "$cygwin" = "true" ]; then
+    export BENSON_HOME=`cygpath -wp "$BENSON_HOME"`
+    export BENSON_CP=`cygpath -wp "$BENSON_CP"`
+    export BENSON_OSGI_FRAMEWORK_STORAGE=`cygpath -wp "$BENSON_OSGI_FRAMEWORK_STORAGE"`
+    export BENSON_AUTO_DEPLOY_DIRECTORY=`cygpath -wp "$BENSON_AUTO_DEPLOY_DIRECTORY"`
+    export BENSON_CONFIG_FILE_PROPERTIES=`cygpath -wp "$BENSON_CONFIG_FILE_PROPERTIES"`
+    echo "Modified BENSON_HOME: $BENSON_HOME"
+    echo "Modified BENSON_CP: $BENSON_CP"
+    echo "Modified BENSON_OSGI_FRAMEWORK_STORAGE: $BENSON_OSGI_FRAMEWORK_STORAGE"
+    echo "Modified BENSON_AUTO_DEPLOY_DIRECTORY: $BENSON_AUTO_DEPLOY_DIRECTORY"
+    echo "Modified BENSON_CONFIG_FILE_PROPERTIES: $BENSON_CONFIG_FILE_PROPERTIES"
+fi
+
+# make sure to disable the flash message feature for the default OSX terminal, we recommend to use a ANSI compliant terminal such as iTerm if flash message support is desired
+APPLE_TERMINAL=false;
+if [ "$TERM_PROGRAM" = "Apple_Terminal" ]; then
+	APPLE_TERMINAL=true
+fi
+
+# Hop, hop, hop...
+if [ "$USE_DEBUG" = "debug" ]; then
+	DEBUG="-Xdebug -Xrunjdwp:transport=dt_socket,address=8000,server=y,suspend=y"
+	PAUSE="-Droo.pause=true"
+	METADATA_TRACE="-Droo.metadata.trace=true"
+else 
+	PAUSE=
+	DEBUG=
+	METADATA_TRACE=
+fi
+
+ANSI="-Droo.console.ansi=true"
+java $PAUSE $DEBUG $METADATA_TRACE $ANSI -Dis.apple.terminal=$APPLE_TERMINAL $BENSON_OPTS -Dorg.osgi.framework.bootdelegation=org.netbeans.lib.profiler,org.netbeans.lib.profiler.\* -DdevelopmentMode=true -Dorg.osgi.framework.storage="$BENSON_OSGI_FRAMEWORK_STORAGE" -Dfelix.auto.deploy.dir="$BENSON_AUTO_DEPLOY_DIRECTORY" -Dfelix.config.properties="file:$BENSON_CONFIG_FILE_PROPERTIES" -cp "$BENSON_CP" com.mangofactory.benson.bootstrap.Main
+EXITED=$?
+echo Benson exited with code $EXITED

@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<artifactId>com.mangofactory.benson.root</artifactId>
+		<groupId>com.mangofactory.benson</groupId>
+		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>../root</relativePath>
+	</parent>
+	<artifactId>com.mangofactory.benson.osgi.bundle</artifactId>
+	<packaging>pom</packaging>
+	<name>Benson - OSGi Bundle Module Parent</name>
+    <description>Provides POM configuration inheritence for standard OSGi modules.</description>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<version>2.3.5</version>
+				<extensions>true</extensions>
+				<configuration>
+					<instructions>
+						<Export-Package>${project.artifactId}.*;version=${project.version}</Export-Package>
+						<Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+						<Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
+						<Bundle-Copyright>Copyright ${project.organization.name}. All
+							Rights Reserved.</Bundle-Copyright>
+						<Bundle-DocURL>${project.url}</Bundle-DocURL>
+					</instructions>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.1</version>
+				<executions>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<outputDirectory>${project.build.directory}/../../target/all</outputDirectory>
+					<silent>true</silent>
+					<includeScope>compile</includeScope>
+					<excludeArtifactIds>
+						org.apache.felix.scr.annotations,
+						org.springframework.roo.shell,
+						org.springframework.roo.shell.osgi
+					</excludeArtifactIds>
+					<excludeGroupIds>org.osgi</excludeGroupIds>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.7</version>
+				<executions>
+					<execution>
+						<!-- copies the JARs we have built locally (eg bootstrap JAR) that 
+							noone else depends on into the target/all -->
+						<id>copy-jars-for-roo-dev-or-assembly</id>
+						<phase>package</phase>
+						<configuration>
+							<target>
+								<copy todir="${project.build.directory}/../../target/all"
+									preservelastmodified="true">
+									<fileset dir="${project.build.directory}">
+										<include name="*.jar" />
+										<exclude name="*-tests.jar" />
+										<exclude name="*-sources.jar" />
+									</fileset>
+								</copy>
+							</target>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+	<modules>
+	</modules>
+</project>

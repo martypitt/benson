@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<artifactId>com.mangofactory.benson.osgi.bundle</artifactId>
+		<groupId>com.mangofactory.benson</groupId>
+		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>../osgi-bundle</relativePath>
+	</parent>
+	<artifactId>com.mangofactory.benson.osgi.benson.bundle</artifactId>
+	<packaging>pom</packaging>
+	<name>Benson - OSGi Benson Bundle Module Parent</name>
+    <description>Provides POM configuration inheritence for standard Benson SCR-requiring modules.</description>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-scr-plugin</artifactId>
+				<version>1.7.2</version>
+				<executions>
+					<execution>
+						<id>generate-scr-scrdescriptor</id>
+						<!-- <phase>compile</phase> -->
+						<goals>
+							<goal>scr</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<parseJavaDoc>false</parseJavaDoc>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
